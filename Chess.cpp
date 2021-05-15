@@ -56,10 +56,19 @@ void doInput(void)
 
 	while (SDL_PollEvent(&event))
 	{
+		int x = 0, y = 0, column = 0, row = 0;
+
 		switch (event.type)
 		{
 		case SDL_QUIT:
 			exit(0);
+			break;
+		case SDL_MOUSEBUTTONDOWN:
+
+			SDL_GetMouseState(&x, &y);
+			row = x / 50;
+			column = y / 50;
+			printf("Clicked on - X: %d\n, Y: %d\n", row + 1, column + 1);
 			break;
 		case SDL_KEYDOWN:
 			switch (event.key.keysym.scancode)
