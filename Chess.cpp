@@ -1,6 +1,6 @@
 #include <iostream>
 #include <SDL.h>
-//#include <SDL_image.h>
+#include <SDL_image.h>
 
 void destroyResource();
 
@@ -8,10 +8,16 @@ typedef struct {
 	SDL_Renderer* renderer;
 	SDL_Window* window;
 } App;
+enum Piece
+{
+	NONE, PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
+};
 
+Piece Index[8][8];
 App app;
 
 SDL_Rect rect;
+int Board[8][8];
 void initSDL(void)
 {
 	int rendererFlags, windowFlags;
@@ -48,8 +54,73 @@ void initSDL(void)
 	rect.y = 10;
 	rect.w = 50;
 	rect.h = 50;
+
+	for (size_t x = 0; x < 8; x++)
+	{
+		for (size_t y = 0; y < 8; y++)
+		{
+			Board[x][y] = -1;
+		}
+	}
+
+	Board[7][6] = 0;
+	Board[6][6] = 0;
+	Board[5][6] = 0;
+	Board[4][6] = 0;
+	Board[3][6] = 0;
+	Board[2][6] = 0;
+	Board[1][6] = 0;
+	Board[0][6] = 0;
+
+	Board[7][7] = 3;
+	Board[6][7] = 2;
+	Board[5][7] = 1;
+	Board[4][7] = 5;
+	Board[3][7] = 4;
+	Board[2][7] = 1;
+	Board[1][7] = 2;
+	Board[0][7] = 3;
+
+	Board[7][1] = 6;
+	Board[6][1] = 6;
+	Board[5][1] = 6;
+	Board[4][1] = 6;
+	Board[3][1] = 6;
+	Board[2][1] = 6;
+	Board[1][1] = 6;
+	Board[0][1] = 6;
+
+	Board[7][0] = 3 + 6;
+	Board[6][0] = 2 + 6;
+	Board[5][0] = 1 + 6;
+	Board[4][0] = 5 + 6;
+	Board[3][0] = 4 + 6;
+	Board[2][0] = 1 + 6;
+	Board[1][0] = 2 + 6;
+	Board[0][0] = 3 + 6;
 }
 
+bool light = true;
+int LastRow = NULL; int LastColumn = NULL;
+
+bool WhiteMove = true;
+bool FirstClick = true;
+
+bool IsValidMove(int row, int column)
+{
+	int oldPiece = Board[LastRow][LastColumn];
+	int newPiece = Board[row][column];
+	bool newIsBlack = newPiece > 5;
+	bool newIsWhite = newPiece > -1 && newPiece <= 5;
+
+	if (LastRow == row && column == LastColumn) return false;
+	return (!FirstClick && (!(newIsBlack && !WhiteMove) && !(newIsWhite && WhiteMove)));
+}
+bool IsValidChoice(int row, int column)
+{
+	int newPiece = Board[row][column];
+	return (FirstClick && newPiece != -1 && ((newPiece > 5 && !WhiteMove) || (newPiece > -1 && newPiece <= 5 && WhiteMove)));
+}
 void doInput(void)
 {
 	SDL_Event event;
@@ -64,11 +135,32 @@ void doInput(void)
 			exit(0);
 			break;
 		case SDL_MOUSEBUTTONDOWN:
-
 			SDL_GetMouseState(&x, &y);
 			row = x / 50;
 			column = y / 50;
-			printf("Clicked on - X: %d\n, Y: %d\n", row + 1, column + 1);
+
+			if (IsValidChoice(row, column) && FirstClick) {
+				LastRow = row;
+				LastColumn = column;
+				FirstClick = false;
+			}
+			else if (!IsValidMove(row, column)) {
+				LastRow = NULL;
+				LastColumn = NULL;
+				FirstClick = true;
+			}
+			else if (!FirstClick) {
+				int newNum = Board[LastRow][LastColumn];
+
+				Board[row][column] = newNum;
+				Board[LastRow][LastColumn] = -1;
+				LastRow = NULL;
+				LastColumn = NULL;
+				WhiteMove = !WhiteMove;
+				FirstClick = true;
+			}
+
+			printf("Clicked on X: %d, Y: %d\n", row + 1, column + 1);
 			break;
 		case SDL_KEYDOWN:
 			switch (event.key.keysym.scancode)
@@ -95,16 +187,69 @@ void cleanupSDL() {
 		SDL_Quit();
 	}
 }
-SDL_Surface* img;
-SDL_Texture* img_txt;
+
+SDL_Surface* piece_B_img[6];
+SDL_Texture* piece_B_txt[6];
+
+SDL_Surface* piece_W_img[6];
+SDL_Texture* piece_W_txt[6];
+
+std::string pieceNames[6] = { "pawn", "knight", "bishop", "rook", "queen", "king" };
+
 void loadResource() {
-	//img = IMG_Load("C:\\Users\\NTB-XX\\source\\repos\\SDL2_Start\\Debug\\kocicka.bmp");
-	//img = SDL_LoadBMP("C:\\Users\\NTB-XX\\source\\repos\\SDL2_Start\\Debug\\kocicka.bmp");
-	img_txt = SDL_CreateTextureFromSurface(app.renderer, img);
+	//for (size_t i = 0; i < std::size(pieceNames); i++)
+	//{
+	//	std::string name = pieceNames[i];
+	//	std::string location = "C:\\dev\\Chess\\Chess\\Pieces\\256px\\b_%s_png_shadow_256px.png", name;
+	//	piece_B_img[i] = IMG_Load(location.c_str());
+	//}
+	//for (size_t i = 0; i < std::size(pieceNames); i++)
+	//{
+	//	std::string name = pieceNames[i];
+	//	std::string location = "C:\\dev\\Chess\\Chess\\Pieces\\256px\\w_%s_png_shadow_256px.png", name;
+	//	piece_W_img[i] = IMG_Load(location.c_str());
+	//}
+
+	piece_B_img[0] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\b_pawn_png_shadow_256px.png");
+	piece_B_img[1] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\b_knight_png_shadow_256px.png");
+	piece_B_img[2] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\b_bishop_png_shadow_256px.png");
+	piece_B_img[3] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\b_rook_png_shadow_256px.png");
+	piece_B_img[4] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\b_queen_png_shadow_256px.png");
+	piece_B_img[5] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\b_king_png_shadow_256px.png");
+
+	piece_W_img[0] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\w_pawn_png_shadow_256px.png");
+	piece_W_img[1] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\w_knight_png_shadow_256px.png");
+	piece_W_img[2] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\w_bishop_png_shadow_256px.png");
+	piece_W_img[3] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\w_rook_png_shadow_256px.png");
+	piece_W_img[4] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\w_queen_png_shadow_256px.png");
+	piece_W_img[5] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\w_king_png_shadow_256px.png");
+
+	for (size_t i = 0; i < 6; i++)
+	{
+		piece_W_txt[i] = SDL_CreateTextureFromSurface(app.renderer, piece_W_img[i]);
+	}
+	for (size_t i = 0; i < 6; i++)
+	{
+		piece_B_txt[i] = SDL_CreateTextureFromSurface(app.renderer, piece_B_img[i]);
+	}
 }
 void destroyResource() {
-	SDL_FreeSurface(img);
-	SDL_DestroyTexture(img_txt);
+	for (size_t i = 0; i < 6; i++)
+	{
+		SDL_DestroyTexture(piece_W_txt[i]);
+	}
+	for (size_t i = 0; i < 6; i++)
+	{
+		SDL_DestroyTexture(piece_B_txt[i]);
+	}
+	for (size_t i = 0; i < 6; i++)
+	{
+		SDL_FreeSurface(piece_W_img[i]);
+	}
+	for (size_t i = 0; i < 6; i++)
+	{
+		SDL_FreeSurface(piece_B_img[i]);
+	}
 }
 
 void prepareScene()
@@ -112,7 +257,6 @@ void prepareScene()
 	SDL_SetRenderDrawColor(app.renderer, 96, 128, 255, 255);
 	SDL_RenderClear(app.renderer);
 
-	bool light = true;
 	for (size_t x = 0; x < 8; x++)
 	{
 		light = !light;
@@ -129,7 +273,14 @@ void prepareScene()
 
 			SDL_RenderFillRect(app.renderer, &rect);
 
-			SDL_RenderCopy(app.renderer, img_txt, NULL, &rect);
+			if (Board[x][y] != -1) {
+				if (Board[x][y] > 5) {
+					SDL_RenderCopy(app.renderer, piece_B_txt[Board[x][y] - 6], NULL, &rect);
+				}
+				else {
+					SDL_RenderCopy(app.renderer, piece_W_txt[Board[x][y]], NULL, &rect);
+				}
+			}
 			light = !light;
 		}
 	}
