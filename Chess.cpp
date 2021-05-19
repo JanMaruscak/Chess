@@ -1,6 +1,8 @@
 #include <iostream>
 #include <SDL.h>
 #include <SDL_image.h>
+#include "Point.h"
+#include <list>
 
 void destroyResource();
 
@@ -73,12 +75,12 @@ void initSDL(void)
 	Board[0][6] = 0;
 
 	Board[7][7] = 3;
-	Board[6][7] = 2;
-	Board[5][7] = 1;
+	Board[6][7] = 1;
+	Board[5][7] = 2;
 	Board[4][7] = 5;
 	Board[3][7] = 4;
-	Board[2][7] = 1;
-	Board[1][7] = 2;
+	Board[2][7] = 2;
+	Board[1][7] = 1;
 	Board[0][7] = 3;
 
 	Board[7][1] = 6;
@@ -91,12 +93,12 @@ void initSDL(void)
 	Board[0][1] = 6;
 
 	Board[7][0] = 3 + 6;
-	Board[6][0] = 2 + 6;
-	Board[5][0] = 1 + 6;
+	Board[6][0] = 1 + 6;
+	Board[5][0] = 2 + 6;
 	Board[4][0] = 5 + 6;
 	Board[3][0] = 4 + 6;
-	Board[2][0] = 1 + 6;
-	Board[1][0] = 2 + 6;
+	Board[2][0] = 2 + 6;
+	Board[1][0] = 1 + 6;
 	Board[0][0] = 3 + 6;
 }
 
@@ -105,6 +107,55 @@ int LastRow = NULL; int LastColumn = NULL;
 
 bool WhiteMove = true;
 bool FirstClick = true;
+std::list<Point> ValidMoves = {};
+
+bool IsPieceBeetweenXBishop(int row, int column) {
+	//int xInc = (row - LastRow) / abs(row - LastRow);
+	//int yInc = (column - LastColumn) / abs(column - LastColumn);
+	//for (size_t x = LastRow + xInc; x != row; x += xInc)
+	//{
+	//	for (size_t y = LastColumn + yInc; y != column; y += yInc)
+	//	{
+	//		if (Board[x][y] != -1) return true;
+	//	}
+	//}
+	//return false;
+	int xInc = (row - LastRow) / (abs(row - LastRow));
+	int yInc = (column - LastColumn) / (abs(column - LastColumn));
+
+	for (int i = 1; i < abs(LastRow - row); i++)
+	{
+		if (Board[LastRow + xInc * i][LastColumn + yInc * i] != -1)
+			return true;
+	}
+	return false;
+}
+bool IsPieceBeetweenX(int row, int column) {
+	int xInc = (row - LastRow) / abs(row - LastRow);
+	for (size_t x = LastRow + xInc; x != row; x += xInc)
+	{
+		if (Board[x][LastColumn] != -1) return true;
+	}
+	return false;
+}
+bool IsPieceBeetweenY(int row, int column) {
+	int yInc = (column - LastColumn) / abs(column - LastColumn);
+	for (size_t y = LastColumn + yInc; y != column; y += yInc)
+	{
+		if (Board[LastRow][y] != -1) return true;
+	}
+	return false;
+}
+//Point* SetValidMoves() {
+//	for (size_t x = 0; x < 8; x++)
+//	{
+//		light = !light;
+//		for (size_t y = 0; y < 8; y++)
+//		{
+//			IsValidMove()
+//		}
+//	}
+//}
 
 bool IsValidMove(int row, int column)
 {
@@ -114,6 +165,74 @@ bool IsValidMove(int row, int column)
 	bool newIsWhite = newPiece > -1 && newPiece <= 5;
 
 	if (LastRow == row && column == LastColumn) return false;
+
+	switch (oldPiece)
+	{
+	case 0: // PAWN
+		if (row == LastRow && LastColumn - column == 1 && !IsPieceBeetweenY(row, column)) {
+		}
+		else {
+			return false;
+		}
+		break;
+	case 6:
+		if (row == LastRow && column - LastColumn == 1 && !IsPieceBeetweenY(row, column)) {
+		}
+		else {
+			return false;
+		}
+		break;
+	case 1: // KNIGHT
+	case 7:
+		if ((abs(row - LastRow) == 2 && abs(column - LastColumn) == 1) || (abs(row - LastRow) == 1 && abs(column - LastColumn) == 2)) {
+		}
+		else {
+			return false;
+		}
+		break;
+	case 2: // BISHOP
+	case 8:
+		if (abs(column - LastColumn) == abs(row - LastRow) && !IsPieceBeetweenXBishop(row, column)) {
+		}
+		else {
+			return false;
+		}
+		break;
+	case 3: // ROOK
+	case 9:
+		if (column == LastColumn && !IsPieceBeetweenX(row, column)) {
+		}
+		else if (row == LastRow && !IsPieceBeetweenY(row, column)) {
+		}
+		else {
+			return false;
+		}
+		break;
+	case 4: // QUEEN
+	case 10:
+		if (column == LastColumn && !IsPieceBeetweenX(row, column)) {
+		}
+		else if (row == LastRow && !IsPieceBeetweenY(row, column)) {
+		}
+		else if (abs(column - LastColumn) == abs(row - LastRow) && !IsPieceBeetweenXBishop(row, column)) {
+		}
+		else {
+			return false;
+		}
+		break;
+		break;
+	case 5: // KING
+	case 11:
+		if (abs(column - LastColumn) <= 1 && abs(row - LastRow) <= 1) {
+		}
+		else {
+			return false;
+		}
+		break;
+
+	default:
+		break;
+	}
 	return (!FirstClick && (!(newIsBlack && !WhiteMove) && !(newIsWhite && WhiteMove)));
 }
 bool IsValidChoice(int row, int column)
@@ -121,6 +240,22 @@ bool IsValidChoice(int row, int column)
 	int newPiece = Board[row][column];
 	return (FirstClick && newPiece != -1 && ((newPiece > 5 && !WhiteMove) || (newPiece > -1 && newPiece <= 5 && WhiteMove)));
 }
+//bool ValidPieceMove(int row, int column) {
+//	int oldPiece = Board[LastRow][LastColumn];
+//	int newPiece = Board[row][column];
+//
+//	switch (oldPiece)
+//	{
+//	case 0:
+//		if(Row - LastRow == 1 && column)
+//		break;
+//	default:
+//		break;
+//	}
+//	if (oldPiece == 0 || oldPiece == 5) {
+//
+//	}
+//}
 void doInput(void)
 {
 	SDL_Event event;
@@ -158,9 +293,10 @@ void doInput(void)
 				LastColumn = NULL;
 				WhiteMove = !WhiteMove;
 				FirstClick = true;
+				printf("Clicked on X: %d, Y: %d\n", row + 1, column + 1);
+				//printf("Clicked on X: %d, Y: %d\n", row + 1, column + 1);
 			}
 
-			printf("Clicked on X: %d, Y: %d\n", row + 1, column + 1);
 			break;
 		case SDL_KEYDOWN:
 			switch (event.key.keysym.scancode)
@@ -265,10 +401,20 @@ void prepareScene()
 			rect.x = x * rect.w;
 			rect.y = y * rect.h;
 			if (light) {
-				SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 255);
+				if (!FirstClick && IsValidMove(x, y)) {
+					SDL_SetRenderDrawColor(app.renderer, 0, 255, 0, 255);
+				}
+				else {
+					SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 255);
+				}
 			}
 			else {
-				SDL_SetRenderDrawColor(app.renderer, 255, 255, 255, 255);
+				if (!FirstClick && IsValidMove(x, y)) {
+					SDL_SetRenderDrawColor(app.renderer, 0, 255, 0, 255);
+				}
+				else {
+					SDL_SetRenderDrawColor(app.renderer, 255, 255, 255, 255);
+				}
 			}
 
 			SDL_RenderFillRect(app.renderer, &rect);
