@@ -10,16 +10,11 @@ typedef struct {
 	SDL_Renderer* renderer;
 	SDL_Window* window;
 } App;
-enum Piece
-{
-	NONE, PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
-};
-
-Piece Index[8][8];
 App app;
 
 SDL_Rect rect;
 int Board[8][8];
+bool HasMovedPawn[8];
 void initSDL(void)
 {
 	int rendererFlags, windowFlags;
@@ -110,16 +105,6 @@ bool FirstClick = true;
 std::list<Point> ValidMoves = {};
 
 bool IsPieceBeetweenXBishop(int row, int column) {
-	//int xInc = (row - LastRow) / abs(row - LastRow);
-	//int yInc = (column - LastColumn) / abs(column - LastColumn);
-	//for (size_t x = LastRow + xInc; x != row; x += xInc)
-	//{
-	//	for (size_t y = LastColumn + yInc; y != column; y += yInc)
-	//	{
-	//		if (Board[x][y] != -1) return true;
-	//	}
-	//}
-	//return false;
 	int xInc = (row - LastRow) / (abs(row - LastRow));
 	int yInc = (column - LastColumn) / (abs(column - LastColumn));
 
@@ -161,22 +146,26 @@ bool IsValidMove(int row, int column)
 {
 	int oldPiece = Board[LastRow][LastColumn];
 	int newPiece = Board[row][column];
+
 	bool newIsBlack = newPiece > 5;
 	bool newIsWhite = newPiece > -1 && newPiece <= 5;
+
+	bool isBlack = oldPiece > 5;
+	bool isWhite = oldPiece > -1 && oldPiece <= 5;
 
 	if (LastRow == row && column == LastColumn) return false;
 
 	switch (oldPiece)
 	{
 	case 0: // PAWN
-		if (row == LastRow && LastColumn - column == 1 && !IsPieceBeetweenY(row, column)) {
+		if (((row == LastRow && LastColumn - column == 1) || (!HasMovedPawn[LastRow] && row == LastRow && LastColumn - column == 2) && !IsPieceBeetweenY(row, column))) {
 		}
 		else {
 			return false;
 		}
 		break;
 	case 6:
-		if (row == LastRow && column - LastColumn == 1 && !IsPieceBeetweenY(row, column)) {
+		if (((row == LastRow && column - LastColumn == 1) || (!HasMovedPawn[LastRow] && row == LastRow && column - LastColumn == 2) && !IsPieceBeetweenY(row, column))) {
 		}
 		else {
 			return false;
@@ -240,22 +229,7 @@ bool IsValidChoice(int row, int column)
 	int newPiece = Board[row][column];
 	return (FirstClick && newPiece != -1 && ((newPiece > 5 && !WhiteMove) || (newPiece > -1 && newPiece <= 5 && WhiteMove)));
 }
-//bool ValidPieceMove(int row, int column) {
-//	int oldPiece = Board[LastRow][LastColumn];
-//	int newPiece = Board[row][column];
-//
-//	switch (oldPiece)
-//	{
-//	case 0:
-//		if(Row - LastRow == 1 && column)
-//		break;
-//	default:
-//		break;
-//	}
-//	if (oldPiece == 0 || oldPiece == 5) {
-//
-//	}
-//}
+
 void doInput(void)
 {
 	SDL_Event event;
@@ -285,6 +259,10 @@ void doInput(void)
 				FirstClick = true;
 			}
 			else if (!FirstClick) {
+
+				if (Board[LastRow][LastColumn] == 0 || Board[LastRow][LastColumn] == 6)
+					HasMovedPawn[LastRow] = true;
+
 				int newNum = Board[LastRow][LastColumn];
 
 				Board[row][column] = newNum;
@@ -333,18 +311,6 @@ SDL_Texture* piece_W_txt[6];
 std::string pieceNames[6] = { "pawn", "knight", "bishop", "rook", "queen", "king" };
 
 void loadResource() {
-	//for (size_t i = 0; i < std::size(pieceNames); i++)
-	//{
-	//	std::string name = pieceNames[i];
-	//	std::string location = "C:\\dev\\Chess\\Chess\\Pieces\\256px\\b_%s_png_shadow_256px.png", name;
-	//	piece_B_img[i] = IMG_Load(location.c_str());
-	//}
-	//for (size_t i = 0; i < std::size(pieceNames); i++)
-	//{
-	//	std::string name = pieceNames[i];
-	//	std::string location = "C:\\dev\\Chess\\Chess\\Pieces\\256px\\w_%s_png_shadow_256px.png", name;
-	//	piece_W_img[i] = IMG_Load(location.c_str());
-	//}
 
 	piece_B_img[0] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\b_pawn_png_shadow_256px.png");
 	piece_B_img[1] = IMG_Load("C:\\dev\\Chess\\Chess\\Pieces\\256px\\b_knight_png_shadow_256px.png");
